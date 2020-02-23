@@ -74,6 +74,7 @@
     "@commitlint/cli": "^8.1.0",
     "@commitlint/config-conventional": "^8.1.0",
     "@jedmao/semantic-release-npm-github-config": "^1.0.9",
+    "@serverless-chrome/lambda": "^1.0.0-55",
     "@types/cheerio": "^0.22.13",
     "@types/find-process": "^1.1.0",
     "@types/jest": "^25.1.0",
@@ -84,6 +85,7 @@
     "@types/puppeteer-core": "^2.0.0",
     "@typescript-eslint/eslint-plugin": "^2.11.0",
     "@typescript-eslint/parser": "^2.11.0",
+    "chrome-aws-lambda": "^2.1.1",
     "cross-env": "^7.0.0",
     "cz-conventional-changelog": "^3.0.2",
     "eslint": "^6.7.2",
@@ -102,6 +104,10 @@
     "semantic-release": "^16.0.2",
     "ts-jest": "^25.0.0",
     "typescript": "^3.7.3"
+  },
+  "peerDependencies": {
+    "@serverless-chrome/lambda": "^1.0.0-55",
+    "chrome-aws-lambda": "^2.0.0"
   },
   "husky": {
     "hooks": {

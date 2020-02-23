@@ -13,6 +13,7 @@ import { get } from 'http';
 import preLogger from './logger';
 import constants from '../config/constants';
 import installer from './installer';
+import { Options } from '../models/options';
 
 interface BrowserVersionInfo {
   Browser: string;
@@ -65,7 +66,9 @@ const getLocalBrowserInstance = async (
   });
 };
 
-const launchSystemBrowser = (): Promise<LaunchedChrome> => {
+const launchSystemBrowser = (
+  useServerlessChrome: boolean,
+): Promise<LaunchedChrome> => {
   const launchOptions: ChromeLauncherOptions = {
     chromeFlags: constants.PUPPETEER_LAUNCH_ARGS,
     logLevel: 'silent',
@@ -73,7 +76,11 @@ const launchSystemBrowser = (): Promise<LaunchedChrome> => {
     maxConnectionRetries: constants.CHROME_LAUNCHER_MAX_CONN_RETRIES,
   };
 
-  return launch(launchOptions);
+  return useServerlessChrome
+    ? import('@serverless-chrome/lambda').then(launchServerlessChrome =>
+        launchServerlessChrome.default(launchOptions),
+      )
+    : launch(launchOptions);
 };
 
 const getLaunchedChromeVersionInfo = (
@@ -107,18 +114,28 @@ const getSystemBrowserInstance = async (
   });
 };
 
-const getBrowserInstance = async (
-  launchArgs?: LaunchOptions,
-): Promise<{ chrome: LaunchedChrome | undefined; browser: Browser }> => {
+type BrowserInstanceGetterOptions = Pick<Options, 'puppeteerChrome'>;
+
+type BrowserInstanceGetter = (
+  launchArgs: LaunchOptions,
+  options: BrowserInstanceGetterOptions,
+) => Promise<{ chrome: LaunchedChrome | undefined; browser: Browser }>;
+
+const getDefaultBrowserInstance: BrowserInstanceGetter = async (
+  launchArgs,
+  options,
+) => {
   const LAUNCHER_CONNECTION_REFUSED_ERROR_CODE = 'ECONNREFUSED';
   const LAUNCHER_NOT_INSTALLED_ERROR_CODE = 'ERR_LAUNCHER_NOT_INSTALLED';
-  const logger = preLogger(getBrowserInstance.name);
+  const logger = preLogger(getDefaultBrowserInstance.name);
 
   let browser: Browser;
   let chrome: LaunchedChrome | undefined;
 
   try {
-    chrome = await launchSystemBrowser();
+    chrome = await launchSystemBrowser(
+      options.puppeteerChrome === '@serverless-chrome/lambda',
+    );
     browser = await getSystemBrowserInstance(chrome, launchArgs);
   } catch (e) {
     // Kill chrome instance manually in case of connection error
@@ -156,6 +173,32 @@ export const killBrowser = async (
   } else {
     await browser.close();
   }
+};
+
+const getAwsLambdaBrowserInstance: BrowserInstanceGetter = async launchArgs => {
+  const { default: chromium } = await import('chrome-aws-lambda');
+  const executablePath = await chromium.executablePath;
+  const browser = await chromium.puppeteer.launch({
+    ...launchArgs,
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath,
+    headless: chromium.headless,
+  });
+
+  return { chrome: undefined, browser };
+};
+
+const getBrowserInstance: BrowserInstanceGetter = (launchArgs, options) => {
+  const chrome = options.puppeteerChrome;
+
+  if (chrome === 'default' || chrome === '@serverless-chrome/lambda') {
+    return getDefaultBrowserInstance(launchArgs, options);
+  }
+  if (chrome === 'chrome-aws-lambda') {
+    return getAwsLambdaBrowserInstance(launchArgs, options);
+  }
+  throw new Error('param options.chrome is invalid');
 };
 
 export default {

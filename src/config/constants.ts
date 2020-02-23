@@ -111,6 +111,10 @@ export default {
       alias: 'd',
       default: false,
     },
+    puppeteerChrome: {
+      type: 'string',
+      default: 'default',
+    },
   },
 
   PUPPETEER_LAUNCH_ARGS: [

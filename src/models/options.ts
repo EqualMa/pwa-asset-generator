@@ -121,6 +121,16 @@ export interface Options {
    @default false
    */
   readonly darkMode: boolean;
+
+  /**
+   Specify the chrome which puppeteer will try to use
+
+   @default "default"
+   */
+  readonly puppeteerChrome:
+    | 'default'
+    | 'chrome-aws-lambda'
+    | '@serverless-chrome/lambda';
 }
 
 export type CLIOptions = Partial<Options>;

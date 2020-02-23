@@ -300,9 +300,12 @@ const generateImages = async (
   options: Options,
 ): Promise<SavedImage[]> => {
   const logger = preLogger(generateImages.name, options);
-  const { browser, chrome } = await browserHelper.getBrowserInstance({
-    timeout: constants.BROWSER_TIMEOUT,
-  });
+  const { browser, chrome } = await browserHelper.getBrowserInstance(
+    {
+      timeout: constants.BROWSER_TIMEOUT,
+    },
+    { puppeteerChrome: options.puppeteerChrome },
+  );
   const splashScreenMetaData = await getSplashScreenMetaData(options, browser);
   const allImages = [
     ...(!options.iconOnly
